@@ -1,0 +1,55 @@
+#/bin/sh -ex
+
+# --bin   will add $INSTALLROOT/bin to PATH
+# --lib   will add $INSTALLROOT/lib to LD_LIBRARY_PATH
+# --lib64 will add $INSTALLROOT/lib64 to LD_LIBRARY_PATH
+HAS_BIN=
+HAS_LIB=
+HAS_LIB64=
+while [ "X$#" != "X0" ]; do
+  case $1 in
+    --bin) HAS_BIN=true; shift ;;
+    --lib) HAS_LIB=true; shift ;;
+    --lib64) HAS_LIB64=true; shift ;;
+  esac
+done
+
+cat << EOF
+#%Module1.0
+proc ModulesHelp { } {
+  global version
+  puts stderr "NICA Modulefile for $PKGNAME $PKGVERSION-@@PKGREVISION@$PKGHASH@@"
+}
+set version $PKGVERSION-@@PKGREVISION@$PKGHASH@@
+module-whatis "NICA Modulefile for $PKGNAME $PKGVERSION-@@PKGREVISION@$PKGHASH@@"
+# Dependencies
+EOF
+FULL_BUILD_REQUIRES=${FULL_BUILD_REQUIRES:-$BUILD_REQUIRES}
+
+# Dependencies
+for x in `env | cut -f1 -d= | grep -v "^DEFAULT_" | grep -v PKGREVISION | grep -v ALIBUILD_RECIPE_TOOLS | grep REVISION | sed -e 's/_REVISION//'`; do
+  REVISION_VALUE=`eval "echo $(echo \\$$(echo ${x}_REVISION))"`
+  VERSION_VALUE=`eval "echo $(echo \\$$(echo ${x}_VERSION))"`
+  ROOT_PATH_VALUE=`eval "echo $(echo \\$$(echo ${x}_ROOT))"`
+  if echo $FULL_BUILD_REQUIRES | tr [:lower:] [:upper:] | tr - _ | tr \  \\n | grep -q "^$x$"; then
+    echo $x is a build_requires. Skipping loading the associated module. >&2
+  elif [ -d $ROOT_PATH_VALUE/etc/modulefiles ]; then
+    for filename in `find $ROOT_PATH_VALUE/etc/modulefiles -type f ! -name '*.*' | xargs -n1 basename`; do
+      printf "\nif ![ is-loaded \"${REVISION_LABEL:-$filename/$VERSION_VALUE-$REVISION_VALUE}\" ] { module load ${REVISION_LABEL:-$filename/$VERSION_VALUE-$REVISION_VALUE} }"
+    done
+  fi
+done
+case $HAS_BIN-$HAS_LIB-$HAS_LIB64 in
+  --) ;;
+  *) printf "\n\nset PKG_ROOT \$::env(NICADIST_BASEDIR)/$PKGNAME/\$version\n" ;;
+esac
+if [ X$HAS_BIN = Xtrue ]; then 
+  printf "prepend-path PATH \$PKG_ROOT/bin\n"
+fi
+if [ X$HAS_LIB = Xtrue ]; then
+  printf "prepend-path LD_LIBRARY_PATH \$PKG_ROOT/lib\n"
+fi
+if [ X$HAS_LIB64 = Xtrue ]; then
+  printf "prepend-path LD_LIBRARY_PATH \$PKG_ROOT/lib64\n"
+fi
+echo

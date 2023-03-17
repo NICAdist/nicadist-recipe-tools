@@ -1,2 +1,1 @@
-# nicadist-recipe-tools
-Copy of alibuild-recipe-tools with modifications towards NICAdist
+A helper script to simplify alibuild recipes used by nicadist fork.
