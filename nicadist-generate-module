@@ -44,7 +44,7 @@ for x in `env | cut -f1 -d= | grep -v "^DEFAULT_" | grep -v PKGREVISION | grep -
 done
 case $HAS_BIN-$HAS_LIB-$HAS_LIB64-$FILL_ROOT in
   ---) ;;
-  *) printf "\n\nset PKG_ROOT $WORK_DIR/$ALIBUILD_ARCH_PREFIX/$PKGNAME/\$version\n" ;;
+  *) printf "\n\nset PKG_ROOT $WORK_DIR/$ALIBUILD_ARCHITECTURE/$PKGNAME/\$version\n" ;;
 esac
 if [ X$HAS_BIN = Xtrue ]; then 
   printf "prepend-path PATH \$PKG_ROOT/bin\n"
