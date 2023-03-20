@@ -3,14 +3,17 @@
 # --bin   will add $INSTALLROOT/bin to PATH
 # --lib   will add $INSTALLROOT/lib to LD_LIBRARY_PATH
 # --lib64 will add $INSTALLROOT/lib64 to LD_LIBRARY_PATH
+# --root  will fill $PKG_ROOT even if no bin or lib is present (header only recipes)
 HAS_BIN=
 HAS_LIB=
 HAS_LIB64=
+FILL_ROOT=
 while [ "X$#" != "X0" ]; do
   case $1 in
     --bin) HAS_BIN=true; shift ;;
     --lib) HAS_LIB=true; shift ;;
     --lib64) HAS_LIB64=true; shift ;;
+    --root) FILL_ROOT=true; shift ;;
   esac
 done
 
@@ -39,8 +42,8 @@ for x in `env | cut -f1 -d= | grep -v "^DEFAULT_" | grep -v PKGREVISION | grep -
     done
   fi
 done
-case $HAS_BIN-$HAS_LIB-$HAS_LIB64 in
-  --) ;;
+case $HAS_BIN-$HAS_LIB-$HAS_LIB64-$FILL_ROOT in
+  ---) ;;
   *) printf "\n\nset PKG_ROOT \$::env(NICADIST_BASEDIR)/$PKGNAME/\$version\n" ;;
 esac
 if [ X$HAS_BIN = Xtrue ]; then 
