@@ -1,31 +1,38 @@
 #/bin/sh -ex
 
-# --bin   will add $INSTALLROOT/bin to PATH
-# --lib   will add $INSTALLROOT/lib to LD_LIBRARY_PATH
-# --lib64 will add $INSTALLROOT/lib64 to LD_LIBRARY_PATH
-# --root  will fill $PKG_ROOT even if no bin or lib is present (header only recipes)
+# --bin          will add $INSTALLROOT/bin to PATH
+# --lib          will add $INSTALLROOT/lib to LD_LIBRARY_PATH
+# --lib64        will add $INSTALLROOT/lib64 to LD_LIBRARY_PATH
+# --root         will fill $PKG_ROOT even if no bin or lib is present (header only recipes)
+# --project=NAME will put 'NAME' before Modulefile in description
 HAS_BIN=
 HAS_LIB=
 HAS_LIB64=
 FILL_ROOT=
+PROJECT=Modulefile
 while [ "X$#" != "X0" ]; do
   case $1 in
-    --bin) HAS_BIN=true; shift ;;
-    --lib) HAS_LIB=true; shift ;;
+    --bin)   HAS_BIN=true;   shift ;;
+    --lib)   HAS_LIB=true;   shift ;;
     --lib64) HAS_LIB64=true; shift ;;
-    --root) FILL_ROOT=true; shift ;;
+    --root)  FILL_ROOT=true; shift ;;
+    --project=*)
+      PROJECT="${1#*=} ${PROJECT}"
+      shift # past argument=value
+      ;;
   esac
 done
 
+# write word "Dependencies" if dependencies are to be added
+WRITE_DEPEND=true
 cat << EOF
 #%Module1.0
 proc ModulesHelp { } {
   global version
-  puts stderr "NICA Modulefile for $PKGNAME $PKGVERSION-@@PKGREVISION@$PKGHASH@@"
+  puts stderr "$PROJECT for $PKGNAME $PKGVERSION-@@PKGREVISION@$PKGHASH@@"
 }
 set version $PKGVERSION-@@PKGREVISION@$PKGHASH@@
-module-whatis "NICA Modulefile for $PKGNAME $PKGVERSION-@@PKGREVISION@$PKGHASH@@"
-# Dependencies
+module-whatis "$PROJECT for $PKGNAME $PKGVERSION-@@PKGREVISION@$PKGHASH@@"
 EOF
 FULL_BUILD_REQUIRES=${FULL_BUILD_REQUIRES:-$BUILD_REQUIRES}
 
@@ -38,13 +45,26 @@ for x in `env | cut -f1 -d= | grep -v "^DEFAULT_" | grep -v PKGREVISION | grep -
     echo $x is a build_requires. Skipping loading the associated module. >&2
   elif [ -d $ROOT_PATH_VALUE/etc/modulefiles ]; then
     for filename in `find $ROOT_PATH_VALUE/etc/modulefiles -type f ! -name '*.*' | xargs -n1 basename`; do
+      # on first dependency add "Dependencies comment"
+      if [ X$WRITE_DEPEND = Xtrue ]; then
+        printf "# Dependencies"
+        WRITE_DEPEND=false
+      fi
       printf "\nif ![ is-loaded \"${REVISION_LABEL:-$filename/$VERSION_VALUE-$REVISION_VALUE}\" ] { module load ${REVISION_LABEL:-$filename/$VERSION_VALUE-$REVISION_VALUE} }"
     done
   fi
 done
 case $HAS_BIN-$HAS_LIB-$HAS_LIB64-$FILL_ROOT in
   ---) ;;
-  *) printf "\n\nset PKG_ROOT $WORK_DIR/$ALIBUILD_ARCHITECTURE/$PKGNAME/\$version\n" ;;
+  *) printf "# Determine path to programs relative to MODULES directory (MODULES/../architecture/programs)\n"
+     printf "# and set the PKG_ROOT\n"
+     printf "set actpath [file dirname \$ModulesCurrentModulefile]\n"
+     printf "set dirmodule [file tail \$actpath]\n"
+     printf "set actpath [file dirname \$actpath]\n"
+     printf "set dirarchitecture [file tail \$actpath]\n"
+     printf "set actpath [file dirname \$actpath]\n"
+     printf "set actpath [file dirname \$actpath]\n"
+     printf "set PKG_ROOT \$actpath/\$dirarchitecture/\$dirmodule/\$version" ;;
 esac
 if [ X$HAS_BIN = Xtrue ]; then 
   printf "prepend-path PATH \$PKG_ROOT/bin\n"
