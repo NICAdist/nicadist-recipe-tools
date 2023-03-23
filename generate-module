@@ -60,7 +60,7 @@ done
 case $HAS_BIN-$HAS_LIB-$HAS_LIB64-$FILL_ROOT-$FILL_PATH in
   ----) ;;
   *) printf "# Determine path to programs relative to MODULES directory (MODULES/../architecture/programs)\n"
-     printf "# and set the PKG_ROOT\n"
+     printf "# and set PKG_ROOT and/or PKG_PATH\n"
      printf "set actpath [file dirname \$ModulesCurrentModulefile]\n"
      printf "set dirmodule [file tail \$actpath]\n"
      printf "set actpath [file dirname \$actpath]\n"
@@ -70,7 +70,7 @@ case $HAS_BIN-$HAS_LIB-$HAS_LIB64-$FILL_ROOT-$FILL_PATH in
 esac
 case $HAS_BIN-$HAS_LIB-$HAS_LIB64-$FILL_ROOT in
   ---) ;;
-  *) printf "set PKG_ROOT \$actpath/\$dirarchitecture/\$dirmodule/\$version" ;;
+  *) printf "set PKG_ROOT \$actpath/\$dirarchitecture/\$dirmodule/\$version\n" ;;
 esac
 if [ X$FILL_PATH = Xtrue ]; then 
   printf "set PKG_PATH \$actpath/\$dirarchitecture\n"
@@ -84,4 +84,3 @@ fi
 if [ X$HAS_LIB64 = Xtrue ]; then
   printf "prepend-path LD_LIBRARY_PATH \$PKG_ROOT/lib64\n"
 fi
-echo
