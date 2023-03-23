@@ -3,23 +3,26 @@
 # --bin          will add $INSTALLROOT/bin to PATH
 # --lib          will add $INSTALLROOT/lib to LD_LIBRARY_PATH
 # --lib64        will add $INSTALLROOT/lib64 to LD_LIBRARY_PATH
-# --root         will fill $PKG_ROOT even if no bin or lib is present (header only recipes)
+# --path         will fill $PKG_PATH where programs are placed (/path/sw/architecture)
 # --project=NAME will put 'NAME' before Modulefile in description
+# --root         will fill $PKG_ROOT even if no bin or lib is present (header only recipes)
+FILL_PATH=
+FILL_ROOT=
 HAS_BIN=
 HAS_LIB=
 HAS_LIB64=
-FILL_ROOT=
 PROJECT=Modulefile
 while [ "X$#" != "X0" ]; do
   case $1 in
     --bin)   HAS_BIN=true;   shift ;;
     --lib)   HAS_LIB=true;   shift ;;
     --lib64) HAS_LIB64=true; shift ;;
-    --root)  FILL_ROOT=true; shift ;;
+    --path)  FILL_PATH=true; shift ;;
     --project=*)
       PROJECT="${1#*=} ${PROJECT}"
       shift # past argument=value
       ;;
+    --root)  FILL_ROOT=true; shift ;;
   esac
 done
 
@@ -54,8 +57,8 @@ for x in `env | cut -f1 -d= | grep -v "^DEFAULT_" | grep -v PKGREVISION | grep -
     done
   fi
 done
-case $HAS_BIN-$HAS_LIB-$HAS_LIB64-$FILL_ROOT in
-  ---) ;;
+case $HAS_BIN-$HAS_LIB-$HAS_LIB64-$FILL_ROOT-$FILL_PATH in
+  ----) ;;
   *) printf "# Determine path to programs relative to MODULES directory (MODULES/../architecture/programs)\n"
      printf "# and set the PKG_ROOT\n"
      printf "set actpath [file dirname \$ModulesCurrentModulefile]\n"
@@ -63,9 +66,15 @@ case $HAS_BIN-$HAS_LIB-$HAS_LIB64-$FILL_ROOT in
      printf "set actpath [file dirname \$actpath]\n"
      printf "set dirarchitecture [file tail \$actpath]\n"
      printf "set actpath [file dirname \$actpath]\n"
-     printf "set actpath [file dirname \$actpath]\n"
-     printf "set PKG_ROOT \$actpath/\$dirarchitecture/\$dirmodule/\$version" ;;
+     printf "set actpath [file dirname \$actpath]\n" ;;
 esac
+case $HAS_BIN-$HAS_LIB-$HAS_LIB64-$FILL_ROOT in
+  ---) ;;
+  *) printf "set PKG_ROOT \$actpath/\$dirarchitecture/\$dirmodule/\$version" ;;
+esac
+if [ X$FILL_PATH = Xtrue ]; then 
+  printf "set PKG_PATH \$actpath/\$dirarchitecture\n"
+fi
 if [ X$HAS_BIN = Xtrue ]; then 
   printf "prepend-path PATH \$PKG_ROOT/bin\n"
 fi
