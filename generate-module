@@ -57,6 +57,10 @@ for x in `env | cut -f1 -d= | grep -v "^DEFAULT_" | grep -v PKGREVISION | grep -
     done
   fi
 done
+# I have written dependencies (WRITE_DEPEND==false), therefore I have to add one newline
+if [ X$WRITE_DEPEND = Xfalse ]; then
+  printf "\n"
+fi
 case $HAS_BIN-$HAS_LIB-$HAS_LIB64-$FILL_ROOT-$FILL_PATH in
   ----) ;;
   *) printf "# Determine path to programs relative to MODULES directory (MODULES/../architecture/programs)\n"
