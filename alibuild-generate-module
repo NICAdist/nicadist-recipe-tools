@@ -1,3 +1,3 @@
 #/bin/sh -ex
 # Wrapper for nicadist generation of modules
-./generate-module --project=NICA "$@"
+generate-module --project=NICA "$@"
